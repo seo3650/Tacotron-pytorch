@@ -124,3 +124,8 @@ dmypy.json
 
 # Result samples
 output.wav
+
+# Train data
+data/LJSpeech-1.1/
+data/ljspeech/
+training/

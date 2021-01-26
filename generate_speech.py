@@ -5,6 +5,7 @@ import numpy as np
 from src.module import Tacotron
 from src.symbols import txt2seq
 from src.utils import AudioProcessor
+import os
 
 def generate_speech(args):
     config = yaml.load(open(args.config, 'r'))
@@ -14,10 +15,16 @@ def generate_speech(args):
     # Decode
     with torch.no_grad():
         mel, spec, attn = model(seq)
-    # Generate wav file
-    ap = AudioProcessor(**config['audio'])
-    wav = ap.inv_spectrogram(spec[0].numpy().T)
-    ap.save_wav(wav, args.output)
+
+    if args.generate_mel:
+        # Save mel spectrogram
+        os.makedirs(args.output_dir, exist_ok=True)
+        np.save(os.path.join(args.output_dir, args.output + '-mel.npy'), mel, allow_pickle=False)
+    else:
+        # Generate wav file
+        ap = AudioProcessor(**config['audio'])
+        wav = ap.inv_spectrogram(spec[0].numpy().T)
+        ap.save_wav(wav, os.path.join(args.output_dir, args.output + '.wav'))
 
 
 def load_ckpt(config, ckpt_path):
@@ -34,7 +41,9 @@ def load_ckpt(config, ckpt_path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Synthesize speech')
     parser.add_argument('--text', default='Welcome to national taiwan university speech lab.', type=str, help='Text to synthesize', required=False)
-    parser.add_argument('--output', default='output.wav', type=str, help='Output path', required=False)
+    parser.add_argument('--output_dir', default='./output')
+    parser.add_argument('--output', default='output', type=str, help='Output path', required=False)
+    parser.add_argument('--generate_mel', action='store_true')
     parser.add_argument('--checkpoint-path', type=str, help='Checkpoint path', required=True)
     parser.add_argument('--config', default='config/config.yaml', type=str, help='Path to config file', required=False)
     args = parser.parse_args()

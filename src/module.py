@@ -302,7 +302,9 @@ class Tacotron(nn.Module):
         # Reshape mel_outputs
         # -> (batch_size, timesteps (decoder), mel_size)
         mel_outputs = mel_outputs.view(batch_size, -1, self.mel_size)
+        # (batch_size, timesteps, 2 * mel_size)
         linear_outputs = self.postnet(mel_outputs)
+        # (batch_size, timesteps, linear_size)
         linear_outputs = self.last_proj(linear_outputs)
         return mel_outputs, linear_outputs, alignments
 

@@ -20,6 +20,15 @@ def generate_speech(args):
         # Save mel spectrogram
         os.makedirs(args.output_dir, exist_ok=True)
         np.save(os.path.join(args.output_dir, args.output + '-mel.npy'), mel, allow_pickle=False)
+        return
+    elif args.usingGLA:
+        spec = np.load(args.linear_file)
+
+        # Generate wav file
+        ap = AudioProcessor(**config['audio'])
+        wav = ap.inv_spectrogram(spec.T)
+        ap.save_wav(wav, os.path.join(args.output_dir, args.output + '.wav'))
+
     else:
         # Generate wav file
         ap = AudioProcessor(**config['audio'])
@@ -44,8 +53,10 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', default='./output')
     parser.add_argument('--output', default='output', type=str, help='Output path', required=False)
     parser.add_argument('--generate_mel', action='store_true')
+    parser.add_argument('--usingGLA', action='store_true')
     parser.add_argument('--checkpoint-path', type=str, help='Checkpoint path', required=True)
     parser.add_argument('--config', default='config/config.yaml', type=str, help='Path to config file', required=False)
+    parser.add_argument('--linear_file', default='')
     args = parser.parse_args()
     generate_speech(args)
 

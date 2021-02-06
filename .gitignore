@@ -129,9 +129,18 @@ output.wav
 data/LJSpeech-1.1/
 data/ljspeech/
 training/
+training2/
+training.bak/
 
 # Result
 output/
+log/
+ckpt/*
 
 # ETC
 test.py
+main.ipynb
+WaveNet.ipynb
+wav.png
+preemphasis_wav.png
+spectrogram_wav.png

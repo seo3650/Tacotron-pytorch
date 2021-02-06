@@ -2,8 +2,8 @@ import librosa
 import librosa.filters
 import numpy as np
 from scipy import signal
-#from scipy.io import wavfile
 import matplotlib
+import matplotlib.pyplot as plt
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from os.path import join
@@ -26,6 +26,7 @@ class AudioProcessor(object):
         self.ref_level_db = ref_level_db
         self.GL_iter = griffin_lim_iters
         self.power = power
+        self.frame_shift_ms = frame_shift_ms
         self.hop_length = hop_length
         self.hop_length = self._get_hop_length()
         self.fmax = fmax
@@ -56,8 +57,7 @@ class AudioProcessor(object):
         return signal.lfilter([1], [1, -self.preemph], wav_preemph)
 
     def spectrogram(self, wav):
-        # D = self._stft(self.preemphasis(wav))
-        D = self._lws_processor().stft(wav).T
+        D = self._lws_processor().stft(self.preemphasis(wav)).T
         S = self._amp_to_db(np.abs(D)) - self.ref_level_db
         return self._normalize(S)
 
@@ -65,11 +65,9 @@ class AudioProcessor(object):
         '''Converts spectrogram to waveform using librosa'''
         S = self._db_to_amp(self._denormalize(linear_spect) + self.ref_level_db)  # Convert back to linear
         return self.inv_preemphasis(self._griffin_lim(S ** self.power))  # Reconstruct phase
-        #return self.inv_preemphasis(self._griffin_lim(S))  # Reconstruct phase
 
     def melspectrogram(self, wav):
-        # D = self._stft(self.preemphasis(wav))
-        D = self._lws_processor().stft(wav).T
+        D = self._lws_processor().stft(self.preemphasis(wav)).T
         S = self._amp_to_db(self._linear_to_mel(np.abs(D))) - self.ref_level_db
         return self._normalize(S)
 
@@ -77,12 +75,14 @@ class AudioProcessor(object):
         '''librosa implementation of Griffin-Lim
         Based on https://github.com/librosa/librosa/issues/434
         '''
+        S = S.T
         angles = np.exp(2j * np.pi * np.random.rand(*S.shape))
         S_complex = np.abs(S).astype(np.complex)
-        y = self._istft(S_complex * angles)
+
+        y = self._lws_processor().istft(S_complex * angles)
         for i in range(self.GL_iter):
-          angles = np.exp(1j * np.angle(self._stft(y)))
-          y = self._istft(S_complex * angles)
+          angles = np.exp(1j * np.angle(self._lws_processor().stft(y)))
+          y = self._lws_processor().istft(S_complex * angles)
         return y
 
     def _stft(self, x):
@@ -112,8 +112,8 @@ class AudioProcessor(object):
 
     def _get_hop_length(self):
         hop_length = self.hop_length
-        if hop_length is None:
-            hop_length = int(self.frame_shift_ms / 1000 * self.sample_rate)
+        if hop_length == 'None':
+            hop_length = int(self.frame_shift_ms / 1000 * self.sr)
         return hop_length
 
 
